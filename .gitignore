@@ -1,0 +1,17 @@
+# -*- mode: gitignore; -*-
+
+**/*~
+**/*.elc
+**/auto-save-list
+**/elpa
+**/.cache
+**/tramp
+**/.\#*
+**/.\#*
+**/.org-id-locations
+**/*_archive
+**/*_flymake.*
+**/*_flymake.*
+**/.projectile
+
+

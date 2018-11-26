@@ -1,0 +1,406 @@
+#+TITLE: Emacs Configuration
+#+AUTHOR: Ken Adams
+#+EMAIL: kenadams@ieee.org
+#+OPTIONS: toc:nil num:nil
+
+Configure emacs using [[https://orgmode.org/][org-mode]]'s built in support for running code inside source
+blocks. Each code block is executed when emacs is loaded using [[https://orgmode.org/worg/org-contrib/babel/intro.html][org-babel-load-file]].
+
+* TODO List
+  Configuration is a work in progress.
+** TODO Fix helm window positioning
+** TODO Add org keybinds
+** TODO Have kill buffer assume to kill current buffer
+* Setup the Package Manager
+Setup [[https://github.com/jwiegley/use-package][use-package]] as the package-manager. 
+
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/"))
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/"))
+(package-initialize)
+(setq package-enable-at-startup nil)
+
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(setq package-enable-at-startup t)
+#+END_SRC 
+
+Always compile packages and use the newest version available.
+
+#+BEGIN_SRC emacs-lisp
+(use-package auto-compile
+  :ensure t
+  :config 
+  (progn 
+  (auto-compile-on-load-mode)
+  (setq load-prefer-newer t)))
+
+#+END_SRC
+
+* Install and configure packages
+** General
+Use [[https://github.com/noctuid/general.el][general]] to elegantly managing keybinds.
+
+#+BEGIN_SRC emacs-lisp
+(use-package general :ensure t)
+#+END_SRC 
+
+** Which Key 
+Use [[https://github.com/justbur/emacs-which-key][which-key]] to display available keybinds in a popup.
+
+#+BEGIN_SRC emacs-lisp
+(use-package which-key
+  :ensure t
+  :config
+    (which-key-mode))
+#+END_SRC
+   
+** Evil Mode
+[[https://github.com/emacs-evil/evil][Evil]]: The extensible vi layer for Emacs.
+#+BEGIN_SRC emacs-lisp
+(use-package evil
+  :ensure t
+  :config
+    (evil-mode))
+#+END_SRC
+
+** Dracula Theme 
+Use the [[https://github.com/dracula/emacs][dracula]] theme.
+
+#+BEGIN_SRC emacs-lisp
+(use-package dracula-theme
+    :ensure t
+    :config
+    (load-theme 'dracula t))
+#+END_SRC
+
+** Helm
+Use [[https://emacs-helm.github.io/helm/][helm]]'s incremental completion and selection narrowing framework whenever possible.
+
+#+BEGIN_SRC emacs-lisp
+(use-package helm
+  :ensure t
+  :config
+    (helm-mode 1))
+#+END_SRC
+
+Type helm input into the helm header line instead of the mini-buffer.
+#+BEGIN_SRC emacs-lisp
+(setq helm-echo-input-in-header-line t)
+(add-hook 'helm-minibuffer-set-up-hook 'spacemacs//helm-hide-minibuffer-maybe)
+#+END_SRC
+
+Setup helm specific keybdings.
+#+BEGIN_SRC emacs-lisp
+(general-def
+  :keymaps 'helm-map
+  "<tab>" 'helm-execute-persistent-action
+  "C-i"   'helm-execute-persistent-action ; make TAB work in terminal
+  "?"     'helm-select-action ; list actions using ?
+  "<escape>" 'keyboard-escape-quit
+)
+#+END_SRC
+
+*** Helm AG 
+[[https://github.com/syohex/emacs-helm-ag][helm-ag]]: Helm interface for the silver searcher (ag), a faster version of grep/ack.
+   
+#+BEGIN_SRC emacs-lisp
+(use-package helm-ag :ensure t)
+#+END_SRC
+
+** Org Bullets
+Use [[https://github.com/sabof/org-bullets][org-bullets]] for pretty bullets in org mode.
+
+#+BEGIN_SRC emacs-lisp
+(use-package org-bullets 
+  :ensure t
+  :config
+    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+#+END_SRC
+
+** Rainbow Delimiters 
+Use [[https://github.com/Fanael/rainbow-delimiters][Rainbow Delimiters]] to color delimiters according to their depth. 
+
+#+BEGIN_SRC emacs-lisp
+  (use-package rainbow-delimiters :ensure t
+  :config
+  (rainbow-delimiters-mode))
+#+END_SRC
+
+** Treemacs 
+Use [[https://github.com/Alexander-Miller/treemacs][treemacs]] as a side window project explorer.
+#+BEGIN_SRC emacs-lisp
+(use-package treemacs
+  :ensure t
+  :config
+  (progn ; progn is used to execute multiple statements
+    (treemacs-follow-mode t)
+    (setq treemacs-follow-after-init t)))
+#+END_SRC
+
+** Powerline
+Use [[https://github.com/milkypostman/powerline][powerline]] as an enhanced [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Mode-Line.html][mode line]].
+
+#+BEGIN_SRC emacs-lisp
+(use-package powerline
+  :ensure t
+  :config
+    (powerline-default-theme))
+#+END_SRC
+
+** Restart emacs
+Use [[https://github.com/iqbalansari/restart-emacs][restart-emacs]] to restart emacs from within emacs.
+
+#+BEGIN_SRC emacs-lisp
+(use-package restart-emacs :ensure t)
+#+END_SRC
+
+* Custom functions ...
+Custom functions used throughout the configuration.
+
+#+BEGIN_SRC emacs-lisp
+(defun spacemacs//helm-hide-minibuffer-maybe ()
+  "Hide minibuffer in Helm session if we use the header line as input field."
+  (when (with-helm-buffer helm-echo-input-in-header-line)
+    (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
+      (overlay-put ov 'window (selected-window))
+      (overlay-put ov 'face
+                   (let ((bg-color (face-background 'default nil)))
+                     `(:background ,bg-color :foreground ,bg-color)))
+      (setq-local cursor-type nil))))
+
+ (defun spacemacs/helm-project-do-ag-region-or-symbol ()
+        "Search in current project with `ag' using a default input."
+        (interactive)
+        (let ((dir (projectile-project-root)))
+          (if dir
+              (spacemacs//helm-do-ag-region-or-symbol 'helm-do-ag dir)
+            (message "error: Not in a project."))))
+
+(defun spacemacs//helm-do-ag-region-or-symbol (func &optional dir)
+        "Search with `ag' with a default input."
+        (require 'helm-ag)
+        (cl-letf* (((symbol-value 'helm-ag-insert-at-point) 'symbol)
+                   ;; make thing-at-point choosing the active region first
+                   ((symbol-function 'this-fn) (symbol-function 'thing-at-point))
+                   ((symbol-function 'thing-at-point)
+                    (lambda (thing)
+                      (let ((res (if (region-active-p)
+                                     (buffer-substring-no-properties
+                                      (region-beginning) (region-end))
+                                   (this-fn thing))))
+                        (when res (rxt-quote-pcre res))))))
+          (funcall func dir)))
+
+(defun reload-config ()
+      " Reload the emacs configuration file"
+      (interactive) (org-babel-load-file "~/.emacs.d/configuration.org"))
+
+(defun spacemacs/helm-swoop-region-or-symbol ()
+        "Call `helm-swoop' with default input."
+        (interactive)
+        (let ((helm-swoop-pre-input-function
+               (lambda ()
+                 (if (region-active-p)
+                     (buffer-substring-no-properties (region-beginning)
+                                                     (region-end))
+                   (let ((thing (thing-at-point 'symbol t)))
+                     (if thing thing ""))))))
+          (call-interactively 'helm-swoop)))
+
+(defun trim-linefeed-right (string)
+  "Remove trailing linefeed from STRING."
+  (if (string-match "[\n\r]+" string)
+      (replace-match "" t t string)
+    string))
+
+
+(defun term-evil-past-after ()
+  (interactive)
+  (term-send-raw-string
+   (trim-linefeed-right
+    (evil-paste-after evil-paste-count))))
+  
+
+(defun term-evil-past-before ()
+  (interactive)
+  (term-send-raw-string (evil-paste-before evil-paste-count)))
+
+(defun toggle-term-evil-line-char ()
+  (interactive)
+  (if (string= evil-state "emacs")
+      (progn
+	(evil-normal-state)
+	(term-line-mode))
+    (progn
+      (evil-emacs-state)
+      (term-char-mode))))
+
+(defun toggle-term-evil ()
+  (interactive)
+  (if (string= evil-state "emacs")
+      (evil-normal-state)
+    (evil-emacs-state)))
+
+
+(defvar-local hidden-mode-line-mode nil)
+(define-minor-mode hidden-mode-line-mode
+  "Minor mode to hide the mode-line in the current buffer."
+  :init-value nil
+  :global t
+  :variable hidden-mode-line-mode
+  :group 'editing-basics
+  (if hidden-mode-line-mode
+      (setq hide-mode-line mode-line-format
+            mode-line-format nil)
+    (setq mode-line-format hide-mode-line
+          hide-mode-line nil))
+  (force-mode-line-update)
+  ;; Apparently force-mode-line-update is not always enough to
+  ;; redisplay the mode-line
+  (redraw-display)
+  (when (and (called-interactively-p 'interactive)
+             hidden-mode-line-mode)
+    (run-with-idle-timer
+     0 nil 'message
+     (concat "Hidden Mode Line Mode enabled.  "
+             "Use M-x hidden-mode-line-mode to make the mode-line appear."))))
+
+
+#+END_SRC
+
+* Setup the space-bar leader system 
+Use [[https://github.com/noctuid/general.el][general]] and [[https://github.com/justbur/emacs-which-key][which-key]] to create a mnemonic keybinding 
+system with popup support, similar to [[http://spacemacs.org/][spacemacs]].
+
+#+BEGIN_SRC emacs-lisp
+(general-def
+ :prefix "SPC"
+ :keymaps 'normal
+ "q"   '(nil :which-key "quit")
+ "qr"  'restart-emacs
+ "x"   '(helm-M-x :which-key "extended-commands")
+ "b"   '(nil :which-key "buffers")
+ "be"  '((lambda () (interactive) (find-file "~/.emacs.d/configuration.org")) :wk "emacs-config")
+ "bE"  '(reload-config :wk "reload-config")
+ "bk"  'kill-buffer
+ "bl"  '(helm-mini :wk "buffer-list")
+ "bo"  '(helm-find-files :wk "open-file")
+ "s"   '(nil :wk "search")
+ "sa"  'helm-do-ag
+ "sP"  'spacemacs/helm-project-do-ag-region-or-symbol
+ "sp"  'helm-projectile-ag
+ "sS"  'spacemacs/helm-swoop-region-or-symbol
+ "ss"  'helm-swoop
+ "h"   '(:keymap help-map :wk "help")
+ "t"   '(nil :wk "toggle")
+ )
+#+END_SRC
+
+* TODO Setup global keybinds ...
+* TODO Make the terminal a first-class citizen
+The default terminal experience is sub par for heavey terminal use inside emacs.
+The terminal will have two modes: char-mode (exclusive mode) and line-mode. In
+char-mode, all keys, except the mode toggle key, are sent directly to the terminal.
+In line mode, the terminal behaves as a normal emacs evil buffer with both input and
+normal modes.
+
+** char-mode 
+All keys,except the mode toggle key, are sent directly to the terminal.
+Evil mode is disabled in this mode as all keys should be sent to the terminal.
+
+Make emacs (not Evil) the default state when starting a terminal.
+#+BEGIN_SRC emacs-lisp
+(evil-set-initial-state 'term-mode 'emacs)
+#+END_SRC
+
+Setup the char-mode keymap.
+#+BEGIN_SRC emacs-lisp
+(general-def
+  :keymaps 'term-raw-map
+  "C-j" 'toggle-term-evil-line-char
+  )
+#+END_SRC
+
+Disable the mode-line when in char-mode (exclusive mode).
+#+BEGIN_SRC emacs-lisp
+(add-hook 'term-mode-hook 'hidden-mode-line-mode)
+#+END_SRC
+
+** line-mode 
+Evil normal mode, most keybinds present.
+
+Setup the line-mode keymap.
+#+BEGIN_SRC emacs-lisp
+(general-def
+  :keymaps 'term-raw-map
+  :states 'normal
+  "p" 'term-evil-past-after
+  "P" 'term-evil-past-before)
+#+END_SRC
+
+* Configure other emacs settings 
+** Resize the emacs window on startup
+#+BEGIN_SRC emacs-lisp
+(when window-system (set-frame-position (selected-frame) 0 0)
+  (set-frame-size (selected-frame) 185 53))
+#+END_SRC
+
+** Disable the menu and tool bar for a cleaner look.
+#+BEGIN_SRC emacs-lisp
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+#+END_SRC
+
+** Turn off the splash screen and startup messages.
+#+BEGIN_SRC emacs-lisp
+(setq inhibit-splash-screen t)
+(setq inhibit-startup-message t)
+(setq inhibit-startup-echo-area-message t)
+(setq initial-scratch-message nil)
+#+END_SRC
+** Disable ringing the system bell.
+#+BEGIN_SRC emacs-lisp
+(setq ring-bell-function 'ignore)
+#+END_SRC
+
+** Display line and collum numbers in programming buffers.
+#+BEGIN_SRC emacs-lisp
+(setq display-line-numbers 1)
+(column-number-mode t)
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+#+END_SRC
+
+** Improve scrolling when using the mouse wheel.
+#+BEGIN_SRC emacs-lisp
+(setq redisplay-dont-pause t)
+(setq scroll-margin 1)
+(setq scroll-step 1)
+(setq scroll-conservatively 100000)
+(setq scroll-preserve-screen-position 1)
+#+END_SRC
+
+** Modify buffer appearence
+#+BEGIN_SRC emacs-lisp
+(setq-default indicate-empty-lines nil)
+(setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
+(setq large-file-warning-threshold nil)
+(setq split-width-threshold nil)
+#+END_SRC
+** Place all generated custom settings in a file instead of polluting init.el.
+#+BEGIN_SRC emacs-lisp
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+#+END_SRC
+** TODO Misc settings
+#+BEGIN_SRC emacs-lisp
+(setq vc-follow-symlinks t)
+(global-eldoc-mode -1)
+(setq-default indent-tabs-mode nil)
+(defalias 'yes-or-no-p 'y-or-n-p)
+#+END_SRC
+
+
