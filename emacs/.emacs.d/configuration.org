@@ -4,13 +4,8 @@
 #+OPTIONS: toc:nil num:nil
 
 Configure emacs using [[https://orgmode.org/][org-mode]]'s built in support for running code inside source
-blocks. Each code block is executed when emacs is loaded using [[https://orgmode.org/worg/org-contrib/babel/intro.html][org-babel-load-file]].
+blocks. Each code block is executed when emacs loads using [[https://orgmode.org/worg/org-contrib/babel/intro.html][org-babel-load-file]].
 
-* TODO List
-  Configuration is a work in progress.
-** TODO Fix helm window positioning
-** TODO Add org keybinds
-** TODO Have kill buffer assume to kill current buffer
 * Setup the Package Manager
 Setup [[https://github.com/jwiegley/use-package][use-package]] as the package-manager. 
 
@@ -42,14 +37,14 @@ Always compile packages and use the newest version available.
 #+END_SRC
 
 * Install and configure packages
-** General
+*** General
 Use [[https://github.com/noctuid/general.el][general]] to elegantly managing keybinds.
 
 #+BEGIN_SRC emacs-lisp
 (use-package general :ensure t)
 #+END_SRC 
 
-** Which Key 
+*** Which Key 
 Use [[https://github.com/justbur/emacs-which-key][which-key]] to display available keybinds in a popup.
 
 #+BEGIN_SRC emacs-lisp
@@ -59,7 +54,7 @@ Use [[https://github.com/justbur/emacs-which-key][which-key]] to display availab
     (which-key-mode))
 #+END_SRC
    
-** Evil Mode
+*** Evil Mode
 [[https://github.com/emacs-evil/evil][Evil]]: The extensible vi layer for Emacs.
 #+BEGIN_SRC emacs-lisp
 (use-package evil
@@ -68,7 +63,7 @@ Use [[https://github.com/justbur/emacs-which-key][which-key]] to display availab
     (evil-mode))
 #+END_SRC
 
-** Dracula Theme 
+*** Dracula Theme 
 Use the [[https://github.com/dracula/emacs][dracula]] theme.
 
 #+BEGIN_SRC emacs-lisp
@@ -78,7 +73,7 @@ Use the [[https://github.com/dracula/emacs][dracula]] theme.
     (load-theme 'dracula t))
 #+END_SRC
 
-** Helm
+*** Helm
 Use [[https://emacs-helm.github.io/helm/][helm]]'s incremental completion and selection narrowing framework whenever possible.
 
 #+BEGIN_SRC emacs-lisp
@@ -112,7 +107,7 @@ Setup helm specific keybdings.
 (use-package helm-ag :ensure t)
 #+END_SRC
 
-** Org Bullets
+*** Org Bullets
 Use [[https://github.com/sabof/org-bullets][org-bullets]] for pretty bullets in org mode.
 
 #+BEGIN_SRC emacs-lisp
@@ -122,7 +117,7 @@ Use [[https://github.com/sabof/org-bullets][org-bullets]] for pretty bullets in 
     (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 #+END_SRC
 
-** Rainbow Delimiters 
+*** Rainbow Delimiters 
 Use [[https://github.com/Fanael/rainbow-delimiters][Rainbow Delimiters]] to color delimiters according to their depth. 
 
 #+BEGIN_SRC emacs-lisp
@@ -131,7 +126,7 @@ Use [[https://github.com/Fanael/rainbow-delimiters][Rainbow Delimiters]] to colo
   (rainbow-delimiters-mode))
 #+END_SRC
 
-** Treemacs 
+*** Treemacs 
 Use [[https://github.com/Alexander-Miller/treemacs][treemacs]] as a side window project explorer.
 #+BEGIN_SRC emacs-lisp
 (use-package treemacs
@@ -142,7 +137,7 @@ Use [[https://github.com/Alexander-Miller/treemacs][treemacs]] as a side window 
     (setq treemacs-follow-after-init t)))
 #+END_SRC
 
-** Powerline
+*** Powerline
 Use [[https://github.com/milkypostman/powerline][powerline]] as an enhanced [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Mode-Line.html][mode line]].
 
 #+BEGIN_SRC emacs-lisp
@@ -152,7 +147,7 @@ Use [[https://github.com/milkypostman/powerline][powerline]] as an enhanced [[ht
     (powerline-default-theme))
 #+END_SRC
 
-** Restart emacs
+*** Restart emacs
 Use [[https://github.com/iqbalansari/restart-emacs][restart-emacs]] to restart emacs from within emacs.
 
 #+BEGIN_SRC emacs-lisp
@@ -309,7 +304,7 @@ char-mode, all keys, except the mode toggle key, are sent directly to the termin
 In line mode, the terminal behaves as a normal emacs evil buffer with both input and
 normal modes.
 
-** char-mode 
+*** char-mode 
 All keys,except the mode toggle key, are sent directly to the terminal.
 Evil mode is disabled in this mode as all keys should be sent to the terminal.
 
@@ -331,7 +326,7 @@ Disable the mode-line when in char-mode (exclusive mode).
 (add-hook 'term-mode-hook 'hidden-mode-line-mode)
 #+END_SRC
 
-** line-mode 
+*** line-mode 
 Evil normal mode, most keybinds present.
 
 Setup the line-mode keymap.
@@ -344,38 +339,38 @@ Setup the line-mode keymap.
 #+END_SRC
 
 * Configure other emacs settings 
-** Resize the emacs window on startup
+*** Resize the emacs window on startup
 #+BEGIN_SRC emacs-lisp
 (when window-system (set-frame-position (selected-frame) 0 0)
   (set-frame-size (selected-frame) 185 53))
 #+END_SRC
 
-** Disable the menu and tool bar for a cleaner look.
+*** Disable the menu and tool bar for a cleaner look.
 #+BEGIN_SRC emacs-lisp
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 #+END_SRC
 
-** Turn off the splash screen and startup messages.
+*** Turn off the splash screen and startup messages.
 #+BEGIN_SRC emacs-lisp
 (setq inhibit-splash-screen t)
 (setq inhibit-startup-message t)
 (setq inhibit-startup-echo-area-message t)
 (setq initial-scratch-message nil)
 #+END_SRC
-** Disable ringing the system bell.
+*** Disable ringing the system bell.
 #+BEGIN_SRC emacs-lisp
 (setq ring-bell-function 'ignore)
 #+END_SRC
 
-** Display line and collum numbers in programming buffers.
+*** Display line and collum numbers in programming buffers.
 #+BEGIN_SRC emacs-lisp
 (setq display-line-numbers 1)
 (column-number-mode t)
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
 #+END_SRC
 
-** Improve scrolling when using the mouse wheel.
+*** Improve scrolling when using the mouse wheel.
 #+BEGIN_SRC emacs-lisp
 (setq redisplay-dont-pause t)
 (setq scroll-margin 1)
@@ -384,18 +379,18 @@ Setup the line-mode keymap.
 (setq scroll-preserve-screen-position 1)
 #+END_SRC
 
-** Modify buffer appearence
+*** Modify buffer appearence
 #+BEGIN_SRC emacs-lisp
 (setq-default indicate-empty-lines nil)
 (setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
 (setq large-file-warning-threshold nil)
 (setq split-width-threshold nil)
 #+END_SRC
-** Place all generated custom settings in a file instead of polluting init.el.
+*** Place all generated custom settings in a file instead of polluting init.el.
 #+BEGIN_SRC emacs-lisp
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 #+END_SRC
-** TODO Misc settings
+*** TODO Misc settings
 #+BEGIN_SRC emacs-lisp
 (setq vc-follow-symlinks t)
 (global-eldoc-mode -1)
@@ -403,4 +398,8 @@ Setup the line-mode keymap.
 (defalias 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
-
+* TODO Todo List
+  Configuration is a work in progress.
+**** TODO Fix helm window positioning
+**** TODO Add org keybinds
+**** TODO Have kill buffer assume to kill current buffer
