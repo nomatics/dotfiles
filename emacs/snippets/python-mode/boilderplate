@@ -1,0 +1,25 @@
+# -*- mode: snippet -*-
+# name: boilerplate
+# key: 
+# --
+"""TODO(kenadams): DO NOT SUBMIT without one-line documentation for something.
+
+TODO(kenadams): DO NOT SUBMIT without a detailed description of something.
+"""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from absl import app
+from absl import flags
+
+FLAGS = flags.FLAGS
+
+
+def main(argv):
+  pass
+  
+if __name__ == '__main__':
+  app.run(main)
+

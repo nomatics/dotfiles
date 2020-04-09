@@ -1,0 +1,742 @@
+#+TITLE: Emacs Base Configuration
+#+AUTHOR: Ken Adams
+#+EMAIL: ken@nomatics.org
+#+OPTIONS: toc:nil num:nil
+
+Configure emacs using [[https://orgmode.org/][org-mode]]'s built in support for running code inside source
+blocks. Each code block is executed when emacs loads using [[https://orgmode.org/worg/org-contrib/babel/intro.html][org-babel-load-file]].
+
+* Load Path
+  #+BEGIN_SRC emacs-lisp
+  (add-to-list 'load-path (concat emacs-dir "lisp/"))
+  #+END_SRC
+
+* Package Manager
+Setup [[https://github.com/jwiegley/use-package][use-package]] as the package-manager. 
+
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/"))
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/"))
+(package-initialize)
+(setq package-enable-at-startup nil)
+
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(setq package-enable-at-startup t)
+#+END_SRC 
+
+* Packages
+  Installed packages.
+** general
+   Use [[https://github.com/noctuid/general.el][general]] to managing keybinds.
+   #+BEGIN_SRC emacs-lisp
+   (use-package general :ensure t)
+   #+END_SRC 
+
+** which-key 
+   Use [[https://github.com/justbur/emacs-which-key][which-key]] to display available keybinds in a popup.
+   #+BEGIN_SRC emacs-lisp
+   (use-package which-key
+     :ensure t
+     :config
+         (which-key-mode))
+   #+END_SRC
+  
+** evil 
+   [[https://github.com/emacs-evil/evil][Evil]]: The extensible vi layer for Emacs.
+   #+BEGIN_SRC emacs-lisp
+   (use-package evil
+   :ensure t
+   :config
+       (evil-mode))
+
+   (with-eval-after-load 'evil
+   (evil-set-command-property 'xref-find-definitions :jump t)
+   (evil-set-command-property 'jedi:goto-definition :jump t))
+   #+END_SRC
+
+** company
+   Use [[https://github.com/company-mode/company-mode][company]] as the in-buffer completion framework.
+   #+BEGIN_SRC emacs-lisp
+   (use-package company
+     :ensure t
+     :config
+      (add-hook 'prog-mode-hook 'company-mode)
+      (add-hook 'cmake-mode-hook 'company-mode))
+  #+END_SRC
+
+** company-lsp
+   #+BEGIN_SRC emacs-lisp
+   (use-package company-lsp
+     :ensure t
+     :after company lsp-mode
+     :config
+      (push 'company-lsp company-backends))
+  #+END_SRC
+** dracula-theme 
+   Use the [[https://github.com/dracula/emacs][dracula]] theme.
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package dracula-theme
+       :config
+       (load-theme 'dracula t))
+   #+END_SRC
+
+** helm
+   Use [[https://emacs-helm.github.io/helm/][helm]]'s incremental completion and selection narrowing framework whenever possible.
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package helm
+   :ensure t
+   :config
+       (helm-mode 1))
+   #+END_SRC
+
+   Type helm input into the helm header line instead of the mini-buffer.
+   #+BEGIN_SRC emacs-lisp
+   (setq helm-echo-input-in-header-line t)
+   (add-hook 'helm-minibuffer-set-up-hook 'spacemacs//helm-hide-minibuffer-maybe)
+   #+END_SRC
+
+   Make helm always use a bottom pop-up window.
+
+   #+BEGIN_SRC emacs-lisp
+   (setq helm-default-display-buffer-functions '(display-buffer-in-side-window))
+   (helm-autoresize-mode 1)
+   (setq helm-autoresize-min-height 40)
+   (setq helm-autoresize-max-height 40)
+   (setq helm-split-window-in-side-p t)
+   #+END_SRC
+
+   Setup helm specific keybdings.
+   #+BEGIN_SRC emacs-lisp
+   (general-def
+   :keymaps 'helm-map
+     "<tab>" 'helm-execute-persistent-action
+     "C-i"   'helm-execute-persistent-action ; make TAB work in terminal
+   "?"     'helm-select-action ; list actions using ?
+   "<escape>" 'keyboard-escape-quit
+   )
+   #+END_SRC
+
+** helm-ag 
+   [[https://github.com/syohex/emacs-helm-ag][helm-ag]]: Helm interface for the silver searcher (ag), a faster version of grep/ack.
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package helm-ag :ensure t)
+   #+END_SRC
+
+** helm-projectile 
+   #+BEGIN_SRC emacs-lisp
+   (use-package helm-projectile 
+     :ensure t
+     :config
+       (helm-projectile-on))
+   
+   #+END_SRC
+** helm-xref 
+   Use helm-xref as a helm interface for xref results
+   #+BEGIN_SRC emacs-lisp
+   (use-package helm-xref
+     :ensure t
+     :config
+      (setq xref-show-xrefs-function 'helm-xref-show-xrefs))
+   #+END_SRC
+
+** lsp-mode
+   #+BEGIN_SRC emacs-lisp
+   (use-package lsp-mode 
+     :ensure t
+     :commands (lsp lsp-deferred)
+     :config
+   )
+   #+END_SRC
+
+** lsp-treemacs
+   #+BEGIN_SRC emacs-lisp
+   (use-package lsp-treemacs
+     :ensure t
+     :after lsp-mode treemacs
+     :config 
+     (progn 
+       (lsp-treemacs-sync-mode 1)
+     ))
+   #+END_SRC
+
+** org-bullets
+   Use [[https://github.com/sabof/org-bullets][org-bullets]] for pretty bullets in org mode.
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package org-bullets 
+   :ensure t
+   :config
+       (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+   #+END_SRC
+
+** pcre2el
+   pcre2el is a dependency of spacemacs//helm-do-ag-region-or-symbol
+   #+BEGIN_SRC emacs-lisp
+   (use-package pcre2el
+   :ensure t)
+   #+END_SRC
+** powerline
+   #+BEGIN_SRC emacs-lisp
+   (use-package powerline
+     :ensure t
+     :pin "melpa-stable")
+   #+END_SRC
+
+** prettier-js
+** projectile
+   #+BEGIN_SRC emacs-lisp
+   (use-package projectile
+     :ensure t
+     :config
+       (projectile-mode +1))
+   #+END_SRC
+
+** rainbow-delimiters 
+   Use [[https://github.com/Fanael/rainbow-delimiters][Rainbow Delimiters]] to color delimiters according to their depth. 
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package rainbow-delimiters
+     :ensure t
+     :config
+     (rainbow-delimiters-mode))
+   #+END_SRC
+** restart-emacs
+   Use [[https://github.com/iqbalansari/restart-emacs][restart-emacs]] to restart emacs from within emacs.
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package restart-emacs :ensure t)
+   #+END_SRC
+
+** treemacs 
+   Use [[https://github.com/Alexander-Miller/treemacs][treemacs]] as a side window project explorer.
+   #+BEGIN_SRC emacs-lisp
+   (use-package treemacs
+       :ensure t
+       :defer t
+       :init
+       :config
+       (progn
+         (treemacs-resize-icons 18)
+          (treemacs-follow-mode -1)
+          (treemacs-filewatch-mode t)))
+   #+END_SRC
+** tremacs-evil
+#+BEGIN_SRC emacs-lisp
+   (use-package treemacs-evil
+     :ensure t
+     :after treemacs evil)
+
+   (general-def
+       :keymaps 'evil-treemacs-state-map
+       "<mouse-1>" 'treemacs-single-click-expand-action
+       "\\"  'treemacs
+       "<escape>" 'keyboard-escape-quit
+       "s"   'treemacs-visit-node-ace-horizontal-split
+       "f"   'treemacs-find-file
+       "-"   'treemacs-collapse-project
+       )
+
+#+END_SRC
+** shell-pop 
+
+   Use [[https://github.com/kyagi/shell-pop-el][shell-pop]] to create pop-up terminal windows.
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package shell-pop
+     :ensure t
+     :custom
+     (shell-pop-shell-type (quote ("ansi-term" "*ansi-term*" (lambda nil (ansi-term shell-pop-term-shell)))))
+     (shell-pop-term-shell "/usr/bin/zsh")
+     (shell-pop-window-size 40)
+     (shell-pop-full-span t)
+     (shell-pop-window-position "bottom")
+   )
+   #+END_SRC
+
+** spaceline
+   #+BEGIN_SRC emacs-lisp
+   (use-package spaceline
+     :ensure t
+     :after powerline helm
+     :pin "melpa-stable"
+     :config
+     )
+   #+END_SRC
+
+** yasnippet
+   #+BEGIN_SRC emacs-lisp
+   (use-package yasnippet
+     :ensure t
+     :config
+     (progn
+       ;(yas-global-mode 1)
+     ))
+
+   (setq yas-snippet-dirs '("~/.emacs.d/snippets/"))
+
+    (general-def 
+      :keymaps 'insert
+      "M-y"  'yas-expand)
+   
+   #+END_SRC
+
+  #+begin_src emacs-lisp
+  (use-package prettier-js
+  :ensure t
+  :config
+    (progn
+    (add-hook 'js2-mode-hook 'prettier-js-mode)
+    (add-hook 'web-mode-hook 'prettier-js-mode)
+   ))
+  #+end_src
+* Functions
+ Custom functions used throughout the configuration.
+** base//goto-definition
+   #+BEGIN_SRC emacs-lisp
+   (defun custom/goto-definition () 
+     (interactive)
+       (cond 
+         ((equal major-mode 'python-mode) (jedi:goto-definition))
+         (t (call-interactively 'xref-find-definitions))))
+   #+END_SRC
+
+** base//reload-config
+   #+BEGIN_SRC emacs-lisp
+   (defun base//reload-config ()
+     " Reload the emacs configuration file"
+     (interactive) (org-babel-load-file (concat emacs-dir "base.config.org")))
+   #+END_SRC
+
+** spacemacs//helm-hide-minibuffer-maybe
+   #+BEGIN_SRC emacs-lisp
+ (defun spacemacs//helm-hide-minibuffer-maybe ()
+  "Hide minibuffer in Helm session if we use the header line as input field."
+  (when (with-helm-buffer helm-echo-input-in-header-line)
+    (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
+      (overlay-put ov 'window (selected-window))
+      (overlay-put ov 'face
+                   (let ((bg-color (face-background 'default nil)))
+                     `(:background ,bg-color :foreground ,bg-color)))
+      (setq-local cursor-type nil))))
+   #+END_SRC
+
+** spacemacs//switch-to-minibuffer-window
+   #+BEGIN_SRC emacs-lisp
+   (defun spacemacs//switch-to-minibuffer-window ()
+     "switch to minibuffer window (if active)"
+     (interactive)
+     (when (active-minibuffer-window)
+       (select-window (active-minibuffer-window))))
+   #+END_SRC
+
+** spacemacs//helm-project-do-ag-region-or-symbol
+   #+BEGIN_SRC emacs-lisp
+   (defun spacemacs//helm-project-do-ag-region-or-symbol ()
+          "Search in current project with `ag' using a default input."
+          (interactive)
+          (let ((dir (projectile-project-root)))
+            (if dir
+                (spacemacs//helm-do-ag-region-or-symbol 'helm-do-ag dir)
+              (message "error: Not in a project."))))
+   #+END_SRC
+
+** next
+   #+BEGIN_SRC emacs-lisp
+   #+END_SRC
+
+** sort
+ #+BEGIN_SRC emacs-lisp
+ #+END_SRC
+
+ #+BEGIN_SRC emacs-lisp
+(defun spacemacs//helm-do-ag-region-or-symbol (func &optional dir)
+        "Search with `ag' with a default input."
+        (require 'helm-ag)
+        (cl-letf* (((symbol-value 'helm-ag-insert-at-point) 'symbol)
+                   ;; make thing-at-point choosing the active region first
+                   ((symbol-function 'this-fn) (symbol-function 'thing-at-point))
+                   ((symbol-function 'thing-at-point)
+                    (lambda (thing)
+                      (let ((res (if (region-active-p)
+                                     (buffer-substring-no-properties
+                                      (region-beginning) (region-end))
+                                   (this-fn thing))))
+                        (when res (rxt-quote-pcre res))))))
+          (funcall func dir)))
+
+
+(defun spacemacs/helm-swoop-region-or-symbol ()
+        "Call `helm-swoop' with default input."
+        (interactive)
+        (let ((helm-swoop-pre-input-function
+               (lambda ()
+                 (if (region-active-p)
+                     (buffer-substring-no-properties (region-beginning)
+                                                     (region-end))
+                   (let ((thing (thing-at-point 'symbol t)))
+                     (if thing thing ""))))))
+          (call-interactively 'helm-swoop)))
+
+(defun trim-linefeed-right (string)
+  "Remove trailing linefeed from STRING."
+  (if (string-match "[\n\r]+" string)
+      (replace-match "" t t string)
+    string))
+
+
+
+(defvar-local hidden-mode-line-mode nil)
+(define-minor-mode hidden-mode-line-mode
+  "Minor mode to hide the mode-line in the current buffer."
+  :init-value nil
+  :global t
+  :variable hidden-mode-line-mode
+  :group 'editing-basics
+  (if hidden-mode-line-mode
+      (setq hide-mode-line mode-line-format
+            mode-line-format nil)
+    (setq mode-line-format hide-mode-line
+          hide-mode-line nil))
+  (force-mode-line-update)
+  ;; Apparently force-mode-line-update is not always enough to
+  ;; redisplay the mode-line
+  (redraw-display)
+  (when (and (called-interactively-p 'interactive)
+             hidden-mode-line-mode)))
+
+(defun custom//kill-other-buffers ()
+    "Kill all other buffers."
+    (interactive)
+    (mapc 'kill-buffer 
+          (delq (current-buffer) 
+                (remove-if-not 'buffer-file-name (buffer-list)))))
+
+(defun custom//format-buffer ()
+  "Format current buffer"
+  (interactive)
+  (prettier-js)
+)
+#+END_SRC
+
+* Keymaps
+** evil leader 
+    Use [[https://github.com/noctuid/general.el][general]] and [[https://github.com/justbur/emacs-which-key][which-key]] to create a mnemonic keybinding 
+    system with popup support, similar to [[http://spacemacs.org/][spacemacs]].
+
+    #+BEGIN_SRC emacs-lisp
+    (general-def
+    :prefix "SPC"
+    :keymaps 'normal
+    "SPC" '(helm-M-x :which-key "M-x")
+    "'"   'shell-pop
+    "b"   '(nil :which-key "buffers")
+
+    "bd"  'kill-this-buffer
+    "be"  '((lambda () (interactive) (find-file (concat emacs-dir "base.config.org"))) :wk "emacs-config")
+    "bE"  '(base//reload-config :wk "reload-config")
+    "bf"  'custom//format-buffer
+    "bk"  'kill-buffer
+    "bK"  '(custom//kill-other-buffers :wk kill-other-buffers)
+    "bl"  '(helm-mini :wk "buffer-list")
+    "bo"  '(helm-find-files :wk "open-file")
+    "cs"  'ivy-cs-at-point-matching-extension
+    "cl"  'comment-line
+    "o"   '(nil :wk "org")
+    "oc"  '(helm-org-capture-templates :wk "capture")
+    "og"  '((lambda () (interactive) (find-file "~/notes/gtd.org")) :wk "gtd")
+    "oy"  '(org-copy :wk "copy")
+    "or"  '(org-refile :wk "refile")
+    "ot"  '(org-todo :wk "todo")
+    "p"   '(nil :wk "project")
+    "pa"  '(treemacs-add-project-to-workspace :wk "add-project")
+    "pc"  '(treemacs-citc :wk "citc-treemacs")
+    "pF"  '(treemacs-find-file :wk "goto-file")
+    "ps"  '(helm-projectile-switch-project :wk "switch-project")
+    "q"   '(nil :which-key "quit")
+    "qr"  'restart-emacs
+    "s"   '(nil :wk "search")
+    "sa"  'helm-do-ag
+    "sf"  '(helm-projectile-find-file :wk "projectile-find-file")
+    "sP"  'spacemacs//helm-project-do-ag-region-or-symbol
+    "sp"  'helm-projectile-ag
+    "sS"  'spacemacs/helm-swoop-region-or-symbol
+    "ss"  'helm-swoop
+    "si"  'helm-imenu
+    "h"   '(:keymap help-map :wk "help")
+    "t"   '(eyebrowse-switch-to-window-config-7 :wk "terminal-layoutlayout-7")
+    "x"   '(helm-M-x :wk "M-x")
+    "w"   '(nil :wk "window")
+    "wb"  '(spacemacs//switch-to-minibuffer-window :wk "mini-buffer")
+    "wd"  'delete-window
+    "wk"  'ace-delete-other-windows
+    "wo"  'nil
+    "ws"  '(ace-swap-window :wk "swap-windows")
+    "wn"  '(eyebrowse-next-window-config :wk "next-layout")
+    "wp"  '(eyebrowse-prev-window-config :wk "prev-layout")
+    "wl"  '(eyebrowse-last-window-config :wk "last-layout")
+    "wc"  '(eyebrowse-create-window-config :wk "create-layout")
+    "w0"  '(eyebrowse-switch-to-window-config-0 :wk "layout-0")
+    "w1"  '(eyebrowse-switch-to-window-config-1 :wk "layout-1")
+    "w2"  '(eyebrowse-switch-to-window-config-2 :wk "layout-2")
+    "w3"  '(eyebrowse-switch-to-window-config-3 :wk "layout-3")
+    "w4"  '(eyebrowse-switch-to-window-config-4 :wk "layout-4")
+    "w5"  '(eyebrowse-switch-to-window-config-5 :wk "layout-5")
+    "w6"  '(eyebrowse-switch-to-window-config-6 :wk "layout-6")
+    "w7"  '(eyebrowse-switch-to-window-config-7 :wk "layout-7")
+    "w8"  '(eyebrowse-switch-to-window-config-8 :wk "layout-8")
+    "w9"  '(eyebrowse-switch-to-window-config-9 :wk "layout-9")
+    )
+    #+END_SRC
+
+** evil normal 
+   Setup keybinds within evil's normal mode map.
+
+  #+BEGIN_SRC emacs-lisp
+  (general-def
+    :keymaps 'normal
+    "\\"  'treemacs
+    "M-x" 'helm-M-x
+    "M-." 'xref-find-definitions
+    "gd" 'xref-find-definitions
+    "'"   'shell-pop
+    "q"   'nil
+   )
+  #+END_SRC
+
+** evil-motion-state-map
+  #+BEGIN_SRC emacs-lisp
+  (general-def
+    :keymaps 'evil-motion-state-map
+    "C-z" 'nil
+  )
+  #+END_SRC
+
+** evil insert
+  #+BEGIN_SRC emacs-lisp
+  (general-def
+    :keymaps 'insert
+    "C-z" 'nil
+    "M-x" 'helm-M-x
+  )
+  #+END_SRC
+
+** emacs
+  #+BEGIN_SRC emacs-lisp
+  (general-def
+    :keymaps 'emacs
+    "C-z" 'nil
+  )
+  #+END_SRC
+
+** company
+   #+BEGIN_SRC emacs-lisp
+   (general-def
+     :keymap company-active-map
+     :states 'insert
+     "C-n" 'company-select-next-or-abort
+     "C-p" 'company-select-previous-or-abort)
+   #+END_SRC
+** org-mode
+   #+BEGIN_SRC emacs-lisp
+   (general-def
+   :keymaps 'org-mode-map
+   :states 'normal
+     "<tab>" 'org-cycle
+     "C-i"   'org-cycle
+   )
+   #+END_SRC
+* Terminal
+The default terminal experience is sub par for heavey terminal use inside emacs.
+Setup the terminal such that it will have two modes: char-mode (exclusive mode)
+and line-mode (normal evil). In char-mode, all keys except a single 'term escape' key,
+are sent directly to the terminal. In line mode, the terminal behaves as a normal
+emacs evil buffer with both input and normal modes. The 'term escape' key toggle
+between line-mode and char-mode.
+
+*** Terminal specific functions 
+    #+BEGIN_SRC emacs-lisp
+    (defun custom/term-evil-past-after ()
+    (interactive)
+    (term-send-raw-string
+    (trim-linefeed-right
+        (evil-paste-after evil-paste-count))))
+
+
+    (defun custom/term-evil-past-before ()
+    (interactive)
+    (term-send-raw-string (evil-paste-before evil-paste-count)))
+
+    (defun custom/enable-char-mode ()
+    (interactive)
+        (evil-emacs-state)
+        (term-char-mode)
+        (eyebrowse-mode -1)
+        (call-interactively #'hidden-mode-line-mode))
+
+    (defun custom/enable-line-mode ()
+    (interactive)
+        (evil-normal-state)
+        (term-line-mode)
+        (eyebrowse-mode)
+        (call-interactively #'hidden-mode-line-mode))
+    #+END_SRC
+
+*** Setup char-mode 
+    In char-mode, all keys, except the mode toggle key, are sent directly to the terminal.
+    Evil mode is disabled as all keys are sent to the terminal. The mode-line, line numbers,
+    and highlighting are disabled when in char mode.
+
+    Since multi-term changes keymaps internally when toggling between char and line
+    mode, we cannot use general to set keys. We must use term-bind-key-alist to set
+    keybindings. Additionally, multi-term undefineds keys in term-unbind-key-list;
+    however, we do not need to modify the unbind list.
+    
+    Setup the keymap in char mode.
+    #+BEGIN_SRC emacs-lisp
+    (setq term-bind-key-alist 
+      '(
+        ("C-c" . term-interrupt-subjob)
+        ("<ESC>" . term-send-esc)
+        ("C-z" . term-send-raw)
+        ("C-j" . custom/enable-line-mode)
+        ("C-S-v" . term-paste)
+        ("C-y" . term-paste)
+        ))
+    #+END_SRC
+
+    When multi-term is started, start in char-mode.
+    #+BEGIN_SRC emacs-lisp
+    (advice-add 'multi-term :after #'custom/enable-char-mode)
+    #+END_SRC
+
+*** Setup line-mode 
+    Evil normal mode, most keybinds present.
+
+    Setup the line-mode keymap.
+    #+BEGIN_SRC emacs-lisp
+    (general-def
+      :keymaps 'term-mode-map
+      :states 'normal
+      "C-j" 'custom/enable-char-mode
+      "p" 'custom//erm-evil-past-after
+      "P" 'custom/term-evil-past-before)
+
+    (general-def
+      :keymaps 'term-mode-map
+      :states 'insert
+      "C-j" 'custom/enable-char-mode)
+    #+END_SRC
+
+* Emacs Preferences 
+** Aliases
+   #+BEGIN_SRC emacs-lisp
+    (defalias 'yes-or-no-p 'y-or-n-p)
+   #+END_SRC
+** Disable the menu and tool bar.
+ #+BEGIN_SRC emacs-lisp
+ (menu-bar-mode -1)
+ (tool-bar-mode -1)
+ #+END_SRC
+
+** Turn off the splash screen and startup messages.
+   #+BEGIN_SRC emacs-lisp
+   (setq inhibit-splash-screen t)
+   (setq inhibit-startup-message t)
+   (setq inhibit-startup-echo-area-message t)
+   (setq initial-scratch-message nil)
+   #+END_SRC
+** Disable ringing the system bell.
+   #+BEGIN_SRC emacs-lisp
+   (setq ring-bell-function 'ignore)
+   #+END_SRC
+
+** Display line and column numbers in specific buffers buffers.
+   #+BEGIN_SRC emacs-lisp
+   (column-number-mode t)
+   (add-hook 'prog-mode-hook #'display-line-numbers-mode)
+   (add-hook 'org-mode-hook #'display-line-numbers-mode)
+   #+END_SRC
+   
+** Improve scrolling when using the mouse wheel.
+   #+BEGIN_SRC emacs-lisp
+   (setq redisplay-dont-pause t)
+   (setq scroll-margin 1)
+   (setq scroll-step 1)
+   (setq scroll-conservatively 100000)
+   (setq scroll-preserve-screen-position 1)
+   #+END_SRC
+
+** Modify buffer appearences
+   #+BEGIN_SRC emacs-lisp
+   (setq-default indicate-empty-lines nil)
+   (setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
+   (setq large-file-warning-threshold nil)
+   (setq split-width-threshold nil)
+   #+END_SRC
+** Place all generated custom settings in a file instead of polluting init.el.
+   #+BEGIN_SRC emacs-lisp
+   (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+   #+END_SRC
+** Save all backup files to the temp directory
+   #+BEGIN_SRC emacs-lisp
+   (setq backup-directory-alist
+     `((".*" . ,temporary-file-directory)))
+   (setq auto-save-file-name-transforms
+     `((".*" ,temporary-file-directory t)))
+   #+END_SRC
+
+** Jump to new window after split
+   #+BEGIN_SRC emacs-lisp
+   (defadvice split-window (after move-point-to-new-window activate)
+     (other-window 1))
+   #+END_SRC
+
+* Editor Preferences
+** Tab behavior
+    #+BEGIN_SRC emacs-lisp
+    (setq-default indent-tabs-mode nil)
+    #+END_SRC
+
+** Language Server Protocol
+*** Mode Hooks
+    #+BEGIN_SRC emacs-lisp
+    (add-hook 'typescript-mode-hook #'lsp)
+    (add-hook 'js-mode-hook #'lsp-deferred)
+    (add-hook 'cc-mode-hook #'lsp-deferred)
+    (setq read-process-output-max (* 4 1024 1024)) ;; 4mb
+    #+END_SRC
+*** Disable lsp-ui documentation
+    #+BEGIN_SRC emacs-lisp
+    (setq lsp-ui-doc-enable nil)
+    #+END_SRC
+
+* Extended Config 
+  Load additional configuration files depending on the enviornment.
+** Graphic mode config
+  If emacs is running in graphics mode, load =graphic.config.org=
+  #+BEGIN_SRC emacs-lisp
+  (when (display-graphic-p)
+    (org-babel-load-file (concat emacs-dir "graphic.config.org")))
+  #+END_SRC
+** Terminal mode config
+  If emacs is running in graphics mode, load =terminal.config.org=
+  #+BEGIN_SRC emacs-lisp
+  (unless (display-graphic-p)
+    (org-babel-load-file (concat emacs-dir "terminal.config.org")))
+  #+END_SRC
+* TODO Todo List
+  Configuration is a work in progress.
+**** TODO Improve startup time
+**** Treemacs thing at point
+**** TODO Fix helm window positioning
+**** TODO Add org keybinds
+**** TODO Have kill buffer assume to kill current buffer
+

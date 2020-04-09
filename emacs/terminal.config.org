@@ -1,0 +1,15 @@
+#+TITLE: Emacs Terminal Mode Configuration
+#+AUTHOR: Ken Adams
+#+EMAIL: ken@nomatics.org
+#+OPTIONS: toc:nil num:nil
+
+* Package overrides 
+** spaceline
+   #+BEGIN_SRC emacs-lisp
+   (require 'spaceline-config)
+   (spaceline-spacemacs-theme)
+      #+END_SRC
+
+* Preferences 
+* TODO Todo List
+

@@ -1,0 +1,39 @@
+#+TITLE: Emacs Graphical Mode Configuration
+#+AUTHOR: Ken Adams
+#+EMAIL: ken@nomatics.org
+#+OPTIONS: toc:nil num:nil
+
+* Additional Packages
+** all-the-icons 
+    [[https://github.com/domtronn/all-the-icons.el][all-the-icons]]: A utility package to collect various Icon Fonts and propertize them within Emacs.
+    #+BEGIN_SRC emacs-lisp
+    (use-package all-the-icons 
+    :ensure t)
+    #+END_SRC
+** spaceline-all-the-icons
+   #+BEGIN_SRC emacs-lisp
+   (use-package spaceline-all-the-icons
+   :ensure t
+   :pin "melpa-stable"
+   :after spaceline all-the-icons
+   :config
+   (spaceline-all-the-icons-theme))
+   #+END_SRC
+
+* Package overrides 
+** treemacs
+   #+BEGIN_SRC emacs-lisp
+   (with-eval-after-load 'treemacs
+     (let* ((item   (car all-the-icons-icon-alist))
+       (extension (car item))
+       (icon (apply (cdr item))))
+       (cons extension icon)))
+   #+END_SRC
+
+* Preferences 
+** Set font size 
+    #+BEGIN_SRC emacs-lisp
+    (set-face-attribute 'default nil :height 96)
+    #+END_SRC
+* TODO Todo List
+
